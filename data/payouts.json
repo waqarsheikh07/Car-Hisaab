@@ -1,0 +1,10 @@
+[
+  {
+    "id": "p1",
+    "date": "2026-07-14",
+    "amount": 70000,
+    "method": "bank",
+    "note": "First profit share — exactly half of Swift's 140,000 profit",
+    "car_id": "swift-2018"
+  }
+]
