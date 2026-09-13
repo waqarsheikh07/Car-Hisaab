@@ -598,8 +598,12 @@ tr.is-empty-month td { color: var(--ink-3); }
 
 .cell-main { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .cell-main > span { min-width: 0; }
+/* Name and model year share one line. The separator is a real space character in
+   the markup, not a flex gap, so "Grande 2019" also survives being copied out of
+   the table — a flex gap renders as a space but copies as "Grande2019". */
+.cell-stack { display: inline; }
 .cell-title { font-weight: 600; }
-.cell-note { font-size: 11.5px; color: var(--ink-3); }
+.cell-note { font-size: 11.5px; color: var(--ink-3); margin-left: 2px; }
 
 /* ---------- 11. Car cards -------------------------------------------------- */
 

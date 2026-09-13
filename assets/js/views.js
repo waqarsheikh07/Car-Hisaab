@@ -137,8 +137,10 @@
       '</tr></thead><tbody>' +
       list.map(function (c) {
         return '<tr data-clickable data-car="' + h(c.id) + '">' +
-          '<td><span class="cell-main"><span><span class="cell-title">' + h(c.name) + '</span>' +
-            '<span class="cell-note">' + (c.model_year ? h(c.model_year) : 'year not set') + '</span></span></span></td>' +
+          '<td><span class="cell-main"><span class="cell-stack">' +
+            '<span class="cell-title">' + h(c.name) + '</span> ' +
+            '<span class="cell-note">' + (c.model_year ? h(c.model_year) : 'year not set') +
+            '</span></span></span></td>' +
           '<td>' + R.statusBadge(c.status, c.profitEstimated) + '</td>' +
           '<td class="right">' + money(c.purchasePrice) + '</td>' +
           '<td class="right">' + money(c.expensesTotal || null) + '</td>' +
