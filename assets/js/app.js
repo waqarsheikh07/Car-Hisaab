@@ -153,12 +153,14 @@
   /* ---------- modal -------------------------------------------------------- */
 
   var modalOnSubmit = null;
+  var modalOnDanger = null;
   var lastFocus = null;
 
   function openModal(opts) {
     closeModal();
     lastFocus = document.activeElement;
     modalOnSubmit = opts.onSubmit || null;
+    modalOnDanger = opts.onDanger || null;
 
     var host = document.createElement('div');
     host.className = 'modal-backdrop';
@@ -191,6 +193,7 @@
     var el = $('#modal');
     if (el && el.parentNode) el.parentNode.removeChild(el);
     modalOnSubmit = null;
+    modalOnDanger = null;
     if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) { /* gone */ } }
     lastFocus = null;
   }
@@ -245,20 +248,50 @@
     state.months = C.monthlyReport(state.data, state.today);
   }
 
-  async function persist(file, value, message) {
+  async function persist(file, value, message, opts) {
     var busy = toast('Saving…', 'busy', true);
     try {
-      await Store.save(file, value, message);
+      var result = await Store.save(file, value, message, opts);
       clearToast(busy);
-      toast(Store.mode === 'demo' ? 'Saved in this browser' : 'Saved to GitHub', 'ok');
+      toast(result.overwrote ? 'Saved — replaced the newer version on GitHub'
+            : Store.mode === 'demo' ? 'Saved in this browser' : 'Saved to GitHub', 'ok');
       recompute();
       render();
       return true;
     } catch (err) {
       clearToast(busy);
+      if (err.code === 'remote-changed') {
+        remoteChangedModal(file, value, message, err);
+        return false;
+      }
       toast('Not saved: ' + err.message, 'err');
       return false;
     }
+  }
+
+  // Somebody edited the same file on GitHub after this browser loaded it. Overwriting
+  // would destroy their edit, so the choice belongs to the person sitting here.
+  function remoteChangedModal(file, value, message, err) {
+    openModal({
+      title: 'This file changed on GitHub',
+      sub: Store.pathFor(file) + ' — your change has not been saved',
+      body: '' +
+        '<div class="banner" data-tone="warn">' + root.Icons.svg('alert-triangle') + '<div>' +
+          '<div class="banner-title">Someone edited this after you opened the app</div>' +
+          'That could be you on another device or tab, or an edit made directly on ' +
+          'github.com. Saving over it would erase that edit without trace.' +
+        '</div></div>' +
+        '<p><b>Reload from GitHub</b> throws away the change you just made here and ' +
+        'shows you the current version. Redo your change and save again — this is ' +
+        'almost always what you want.</p>' +
+        '<p><b>Overwrite</b> keeps your version and replaces what is on GitHub. The ' +
+        'other edit is still recoverable from the repository history, but it will be ' +
+        'gone from the file.</p>',
+      submitLabel: 'Reload from GitHub',
+      danger: 'Overwrite anyway',
+      onSubmit: function () { boot({ keepView: true }); return true; },
+      onDanger: function () { persist(file, value, message, { force: true }); }
+    });
   }
 
   function carById(id) {
@@ -770,6 +803,8 @@
   async function testConnection() {
     var v = readForm('[data-form="connection"]');
     if (!v.owner || !v.repo) { toast('Enter the username and repository', 'err'); return; }
+    // The field is rendered empty on purpose; blank keeps whatever is already stored.
+    if (!v.token) v.token = Store.config.token;
     if (!v.token) { toast('Paste a personal access token', 'err'); return; }
     var busy = toast('Checking…', 'busy', true);
     try {
@@ -862,7 +897,11 @@
       var shouldClose = modalOnSubmit();
       if (shouldClose !== false) closeModal();
     },
-    'modal-danger': closeModal
+    'modal-danger': function () {
+      var fn = modalOnDanger;
+      closeModal();
+      if (fn) fn();
+    }
   };
 
   function onClick(event) {

@@ -518,12 +518,22 @@
              'and are never sent anywhere.']
     }[mode];
 
+    // Say up front when this copy of the app physically cannot reach GitHub, rather
+    // than letting the person fill in a token and hit an opaque failure.
+    var unreachable = (mode !== 'live') && !root.Store.canReachGitHub();
+    var blockedBanner = unreachable
+      ? '<div class="banner" data-tone="danger" style="margin-bottom:14px">' + icon('alert-triangle') +
+        '<div><div class="banner-title">This copy cannot connect to GitHub</div>' +
+        h(root.Store.networkHint()) + '</div></div>'
+      : '';
+
     return '' +
       '<div class="card">' +
         '<div class="card-head"><div><h2>GitHub connection</h2>' +
           '<div class="sub">Your token is stored in this browser only. It is never written into the repo.</div></div>' +
         '</div>' +
         '<div class="card-body">' +
+          blockedBanner +
           '<div class="banner" data-tone="' + (mode === 'live' ? 'info' : 'warn') + '" style="margin-bottom:14px">' +
             icon(mode === 'live' ? 'check-circle' : 'info') +
             '<div><div class="banner-title">' + modeCopy[0] + '</div>' + modeCopy[1] + '</div></div>' +
@@ -532,10 +542,15 @@
             field('Repository', 'repo', cfg.repo, { placeholder: 'Car-Hisaab' }) +
             field('Branch', 'branch', cfg.branch, { placeholder: 'main' }) +
             field('Data folder', 'dataPath', cfg.dataPath, { placeholder: 'data', hint: 'Where the JSON files live' }) +
-            field('Personal access token', 'token', cfg.token, {
+            // The token value is deliberately NOT rendered. Putting a secret in a
+            // value attribute puts it in the page source, in devtools, and in any
+            // screenshot of them. Blank means "keep the one already saved".
+            field('Personal access token', 'token', '', {
               type: 'password', span2: true,
-              placeholder: cfg.token ? '•••••••• (saved)' : 'github_pat_…',
-              hint: 'Fine-grained token, this repository only, Contents: Read and write'
+              placeholder: cfg.token ? 'Saved — leave blank to keep it' : 'github_pat_…',
+              hint: cfg.token
+                ? 'A token is saved in this browser. Type a new one only to replace it.'
+                : 'Fine-grained token, this repository only, Contents: Read and write'
             }) +
           '</form>' +
           '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">' +

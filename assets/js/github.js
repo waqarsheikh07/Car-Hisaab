@@ -23,6 +23,7 @@
   };
   var mode = 'demo';
   var shas = {};          // filename -> blob sha, refreshed on every read/write
+  var baselines = {};     // filename -> the exact text we last read or wrote
   var cache = {};         // filename -> parsed JSON
   var listeners = [];
 
@@ -108,6 +109,36 @@
     };
   }
 
+  // fetch() rejects with a bare "Failed to fetch" for every network-level failure,
+  // which tells the person nothing. Work out the actual reason and say it.
+  function networkHint() {
+    if (location.protocol === 'file:') {
+      return 'Cannot reach GitHub because this page was opened straight from a file on ' +
+        'your computer. Browsers block requests to github.com from file:// pages. Open the ' +
+        'app from its GitHub Pages address (Settings \u2192 Pages in the repository) and ' +
+        'connect the token there.';
+    }
+    var embedded = false;
+    try { embedded = window.top !== window.self; } catch (e) { embedded = true; }
+    if (embedded) {
+      return 'Cannot reach GitHub from this preview. The preview runs in a sandbox that ' +
+        'blocks outside requests, so it can only ever show sample data. To use real data, ' +
+        'open the app from your GitHub Pages address and connect the token there.';
+    }
+    return 'Could not reach GitHub. Check your internet connection, and whether an ad ' +
+      'blocker, firewall or VPN is blocking api.github.com.';
+  }
+
+  async function netFetch(url, options) {
+    try {
+      return await fetch(url, options);
+    } catch (e) {
+      var err = new Error(networkHint());
+      err.code = 'network';
+      throw err;
+    }
+  }
+
   function httpError(res, body) {
     var msg = (body && body.message) || res.statusText || ('HTTP ' + res.status);
     if (res.status === 401) msg = 'Token rejected (401). It may be expired, or pasted incomplete.';
@@ -121,7 +152,7 @@
   async function apiGet(file) {
     var url = contentsUrl(file) + '?ref=' + encodeURIComponent(config.branch) +
       '&t=' + encodeURIComponent(String(new Date().getTime()));
-    var res = await fetch(url, { headers: apiHeaders(), cache: 'no-store' });
+    var res = await netFetch(url, { headers: apiHeaders(), cache: 'no-store' });
     if (res.status === 404) return null;              // file not created yet
     var body = await res.json().catch(function () { return null; });
     if (!res.ok) throw httpError(res, body);
@@ -135,7 +166,7 @@
       branch: config.branch
     };
     if (sha) payload.sha = sha;
-    var res = await fetch(contentsUrl(file), {
+    var res = await netFetch(contentsUrl(file), {
       method: 'PUT',
       headers: Object.assign({ 'Content-Type': 'application/json' }, apiHeaders()),
       body: JSON.stringify(payload)
@@ -149,14 +180,14 @@
     var previous = JSON.parse(JSON.stringify(config));
     try {
       saveConfig(candidate);
-      var res = await fetch(
+      var res = await netFetch(
         'https://api.github.com/repos/' + encodeURIComponent(config.owner) + '/' +
         encodeURIComponent(config.repo),
         { headers: apiHeaders(), cache: 'no-store' }
       );
       var body = await res.json().catch(function () { return null; });
       if (!res.ok) throw httpError(res, body);
-      var branchRes = await fetch(
+      var branchRes = await netFetch(
         'https://api.github.com/repos/' + encodeURIComponent(config.owner) + '/' +
         encodeURIComponent(config.repo) + '/branches/' + encodeURIComponent(config.branch),
         { headers: apiHeaders(), cache: 'no-store' }
@@ -227,6 +258,7 @@
             missing.push(file + '.json');
           } else {
             shas[file] = got.sha;
+            baselines[file] = got.text;
             try {
               cache[file] = JSON.parse(got.text);
             } catch (e) {
@@ -287,11 +319,13 @@
 
   // GET for the current sha, PUT with it. On a 409/422 conflict, re-read once
   // and retry — then surface a real error rather than silently losing an edit.
-  async function save(file, value, message) {
+  async function save(file, value, message, opts) {
+    var force = !!(opts && opts.force);
     cache[file] = value;
     emit('saving', { file: file });
 
     if (mode === 'demo') {
+      baselines[file] = JSON.stringify(value);
       var ok = demoWrite(snapshot());
       emit(ok ? 'saved' : 'error', {
         file: file,
@@ -315,17 +349,53 @@
     try {
       var newSha = await apiPut(file, text, commitMessage, shas[file]);
       if (newSha) shas[file] = newSha;
+      baselines[file] = text;
       emit('saved', { file: file, message: 'Saved to GitHub' });
       return { mode: 'live', sha: newSha };
     } catch (err) {
       if (err.status === 409 || err.status === 422) {
+        // A stale sha has two very different causes, and they must not be treated
+        // the same. Re-read and compare against the text we last held:
+        //   · identical  -> nothing really changed, our sha just drifted. Safe to retry.
+        //   · different  -> somebody edited the file (on github.com, another device,
+        //                   another tab) since we loaded it. Retrying here would
+        //                   overwrite their work with our stale copy and destroy it
+        //                   silently, so refuse and hand the decision to the user.
+        var fresh;
         try {
-          var fresh = await apiGet(file);
-          shas[file] = fresh ? fresh.sha : undefined;
-          var retrySha = await apiPut(file, text, commitMessage + ' (retry after conflict)', shas[file]);
+          fresh = await apiGet(file);
+        } catch (readErr) {
+          emit('error', { file: file, message: 'Conflict on ' + pathFor(file) + ': ' + readErr.message });
+          throw readErr;
+        }
+        shas[file] = fresh ? fresh.sha : undefined;
+
+        var remoteChanged = fresh && baselines[file] !== undefined &&
+          normalise(fresh.text) !== normalise(baselines[file]);
+
+        if (remoteChanged && !force) {
+          var conflict = new Error(
+            pathFor(file) + ' was changed on GitHub after you loaded it. ' +
+            'Your change has NOT been saved — saving it now would erase that other edit.');
+          conflict.code = 'remote-changed';
+          conflict.file = file;
+          conflict.remoteText = fresh.text;
+          emit('error', { file: file, message: conflict.message });
+          throw conflict;
+        }
+
+        try {
+          var retrySha = await apiPut(file, text,
+            commitMessage + (remoteChanged ? ' (overwrote a newer version on request)' : ' (retry)'),
+            shas[file]);
           if (retrySha) shas[file] = retrySha;
-          emit('saved', { file: file, message: 'Saved to GitHub (resolved a conflict)' });
-          return { mode: 'live', sha: retrySha, retried: true };
+          baselines[file] = text;
+          emit('saved', {
+            file: file,
+            message: remoteChanged ? 'Saved — replaced the newer version on GitHub'
+                                   : 'Saved to GitHub (sha had drifted, retried)'
+          });
+          return { mode: 'live', sha: retrySha, retried: true, overwrote: remoteChanged };
         } catch (retryErr) {
           emit('error', { file: file, message: 'Conflict on ' + pathFor(file) + ': ' + retryErr.message });
           throw retryErr;
@@ -334,6 +404,11 @@
       emit('error', { file: file, message: err.message });
       throw err;
     }
+  }
+
+  // Whitespace and key order are not meaningful differences in these files.
+  function normalise(text) {
+    try { return JSON.stringify(JSON.parse(text)); } catch (e) { return String(text).trim(); }
   }
 
   /* ---------- events ------------------------------------------------------ */
@@ -353,6 +428,11 @@
     get mode() { return mode; },
     get data() { return snapshot(); },
     pathFor: pathFor,
+    networkHint: networkHint,
+    canReachGitHub: function () {
+      if (location.protocol === 'file:') return false;
+      try { return window.top === window.self; } catch (e) { return false; }
+    },
     isConnected: isConnected,
     canWrite: canWrite,
     saveConfig: saveConfig,

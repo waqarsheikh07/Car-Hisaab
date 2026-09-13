@@ -43,11 +43,12 @@ also what the shared preview link runs on.
 4. Wait about a minute. The site appears at
    `https://<your-username>.github.io/Car-Hisaab/`.
 
-> **Before you make this repository public**, remember that everything in `data/` becomes
-> readable by anyone with the link — purchase prices, sale prices, profits, payouts.
-> GitHub Pages on a free account only works for public repositories. If you want the data
-> private, keep the repository private and either open `index.html` locally or upgrade to
-> GitHub Pro, which allows Pages on private repositories.
+> **This repository is public, so the figures in `data/` are readable by anyone with the
+> link** — purchase prices, sale prices, profits and payouts. That is the trade for free
+> GitHub Pages hosting; there is no login on the site. To reverse it: Settings → General →
+> Danger Zone → Change visibility → Make private, which also turns Pages off. The private
+> alternative is running it locally: `python3 -m http.server` in this folder, then open
+> `http://localhost:8000`.
 
 ### Connect a token so you can edit
 
@@ -66,7 +67,16 @@ To make changes:
    (`main`) and paste the token, then press **Test & connect**.
 
 The token is kept in that browser's `localStorage` and nowhere else. It is never written
-into any file in this repository. **Settings → Disconnect token** removes it.
+into any file in this repository, never put in a URL, and never rendered into the page —
+the token box is always shown empty, and leaving it blank keeps the one already saved.
+**Settings → Disconnect token** removes it.
+
+**The app must be served over http(s) for this to work.** Opening `index.html` straight
+from disk (a `file://` address) means the browser blocks all requests to github.com, and
+the shared preview link runs in a sandbox that blocks them too — in both cases connecting
+fails with a network error. Use the GitHub Pages address, or serve the folder locally
+(`python3 -m http.server` in this directory, then open `http://localhost:8000`). The app
+detects both situations and says so on the Settings screen.
 
 Every change you make after that becomes a real commit on the branch, so you get full
 history and can always see who changed what and when.
@@ -223,6 +233,35 @@ required threshold. Two consequences worth knowing:
   3:1 contrast threshold against the light background and a text alternative is required.
 
 ---
+
+## If two people edit at once
+
+The app never overwrites a change it did not make. Each save is pinned to the version of
+the file it was based on. If the file changed on GitHub in the meantime — you editing on
+another device, or a change made directly on github.com — the save is **refused** and you
+are asked what to do:
+
+- **Reload from GitHub** discards the change you just made here and shows the current
+  version, so you can redo it on top. This is almost always the right choice.
+- **Overwrite anyway** keeps your version. The other edit stays in the repository history
+  but is gone from the file.
+
+This matters because the obvious implementation — re-read, then retry the write — silently
+destroys the other person's edit. It is not what this app does.
+
+## If the same file is edited twice
+
+The app never overwrites a change it did not make. Every save is pinned to the version it
+was based on. If the file moved on GitHub in the meantime — you on another device, or an
+edit made directly on github.com — the save is **refused** and you choose:
+
+- **Reload from GitHub** throws away the change you just made and shows the current
+  version, so you can redo it on top. Almost always the right choice.
+- **Overwrite anyway** keeps your version. The other edit survives in the repository
+  history but is gone from the file.
+
+This matters because the obvious implementation — re-read, then retry the write — silently
+destroys the other edit. That is not what this app does.
 
 ## Exports
 
