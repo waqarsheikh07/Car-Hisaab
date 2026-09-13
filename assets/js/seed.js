@@ -161,7 +161,7 @@ window.SEED_DATA = {
       "id": "c2",
       "date": "2026-06-11",
       "amount": 7200000,
-      "note": "Balance of the 77 lac investment — split this into real dated entries as you confirm each transfer"
+      "note": "Balance of the confirmed 77 lac (PKR 7,700,000) investment — split this into the real transfers and their real dates"
     }
   ],
   "settings": {

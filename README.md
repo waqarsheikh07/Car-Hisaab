@@ -122,10 +122,11 @@ was shared over WhatsApp, not from a full set of books.
   is ignored and the profit is calculated properly — the app does that switch on its own.
 - **Every date is an estimate.** Cars are marked *dates unconfirmed* until you correct
   them. Dates only affect which month a figure lands in, not any total.
-- **Capital is recorded as PKR 7,700,000** in two entries. Note that 8.7 million was
-  mentioned at one point and 77 lac at another — these disagree by 10 lac. Confirm the
-  real figure and correct it on the Capital screen; every capital-related number depends
-  on it.
+- **Capital is PKR 7,700,000 (77 lac)** — confirmed. It is recorded as two entries: the
+  500,000 token amount sent on 11 June 2026, and the 7,200,000 balance on the same date.
+  The balance is a placeholder date: split it into the real transfers, with their real
+  dates, on the Capital screen. Dates only change which month each entry lands in, not
+  the total.
 - **Rebirth's 2,900,000 was described as total cost**, so it is recorded as the purchase
   price with no expenses. If part of it was repair spend, split it out into expenses so
   the cost breakdown is accurate.
