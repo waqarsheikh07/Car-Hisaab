@@ -31,7 +31,7 @@ window.SEED_DATA = {
     {
       "id": "rebirth-2012",
       "name": "Rebirth",
-      "model_year": 2012,
+      "model_year": 2014,
       "registration": "",
       "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRurc58XjG0SriPYtPh_U5_pBkfFS4UPEBPJykiKGYrdl7iNH6aU4pUPzQ&s=10",
       "purchase_date": "2026-06-25",
@@ -73,7 +73,7 @@ window.SEED_DATA = {
     {
       "id": "cultus-2019",
       "name": "Cultus",
-      "model_year": 2028,
+      "model_year": 2008,
       "registration": "",
       "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7dzmqhkydK8ZrxJbYBQWUoYNsUVPbZkMM8timpPBbAZGM1Xn-91qSsn4&s=10",
       "purchase_date": "2026-07-30",
@@ -178,14 +178,14 @@ window.SEED_DATA = {
       "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRQCFMswmvXeSOZQp6x7zUvKJb11OsmQxhDe7xwk5MW9g&s=10",
       "purchase_date": "2026-09-23",
       "purchase_price": 4950000,
-      "status": "in_stock",
+      "status": "under_repair",
       "sale_date": null,
       "sale_price": null,
       "profit_override": null,
       "buyer_note": "",
       "needs_confirmation": false,
       "expenses": [],
-      "notes": ""
+      "notes": "At the workshop. Repair costs still to come — add them as expenses once Usama confirms."
     }
   ],
   "payouts": [
