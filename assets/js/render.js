@@ -162,8 +162,8 @@
             '<div class="progress-fill" data-progress="' + (s.paidRatio * 100).toFixed(2) + '"></div>' +
           '</div>' +
           '<div class="progress-legend">' +
-            '<span>Earned <b>' + C.formatPKR(s.myProfitEarned) + '</b></span>' +
-            '<span>Received <b>' + C.formatPKR(s.totalPaidToMe) + '</b></span>' +
+            '<span>Earned <b>' + C.formatPKR(s.myProfitEarned) + '</b>\u00a0</span>' +
+            '<span>Received <b>' + C.formatPKR(s.totalPaidToMe) + '</b>\u00a0</span>' +
             '<span>Still owed <b>' + C.formatPKR(s.outstandingToMe) + '</b></span>' +
           '</div>' +
         '</div>' +
@@ -195,8 +195,15 @@
         icon: 'landmark', label: 'Capital invested',
         value: C.formatPKR(s.totalCapitalInvested), countTo: s.totalCapitalInvested, prefix: 'PKR ',
         sub: h(C.shorthand(s.totalCapitalInvested)),
-        foot: icon('package') + C.formatPKR(s.capitalDeployed) + ' tied up in ' + s.carsInStockCount + ' unsold cars'
+        foot: icon('package') + C.formatPKR(s.myCapitalDeployed) + ' of yours tied up in ' +
+              s.carsInStockCount + ' unsold car' + (s.carsInStockCount === 1 ? '' : 's')
       }) +
+      (s.partnerCapitalDeployed > 0 ? statCard({
+        icon: 'users', label: h(partner) + '’s money in stock',
+        value: C.formatPKR(s.partnerCapitalDeployed), countTo: s.partnerCapitalDeployed, prefix: 'PKR ',
+        sub: 'Not yours — excluded from every figure above',
+        foot: icon('info') + 'Total in stock ' + C.formatPKR(s.capitalDeployed)
+      }) : '') +
       statCard({
         icon: 'piggy-bank', label: 'Capital not working',
         value: C.formatPKR(s.capitalIdle), countTo: s.capitalIdle, prefix: 'PKR ',
@@ -280,16 +287,16 @@
     var idle = Math.max(0, s.capitalIdle);
     var splitChart = chartCard({
       key: 'moneySplit',
-      title: 'Where the money is',
-      sub: 'Capital tied up in stock, capital sitting idle, and profit booked.',
+      title: 'Where your money is',
+      sub: 'Your capital tied up in stock, sitting idle, and the profit it has booked.',
       legend: Charts.legendHTML([
-        { label: 'Tied up in unsold cars', color: t.series[0], value: C.formatPKR(s.capitalDeployed) },
+        { label: 'Tied up in unsold cars', color: t.series[0], value: C.formatPKR(s.myCapitalDeployed) },
         { label: 'Idle capital', color: t.series[1], value: C.formatPKR(idle) },
         { label: 'Profit booked', color: t.series[2], value: C.formatPKR(s.totalProfitAllTime) }
       ]),
       table: simpleTable(
         [{ label: 'Bucket' }, { label: 'Amount', right: true }],
-        [['Tied up in unsold cars', C.formatNumber(s.capitalDeployed)],
+        [['Tied up in unsold cars', C.formatNumber(s.myCapitalDeployed)],
          ['Idle capital', C.formatNumber(idle)],
          ['Profit booked', C.formatNumber(s.totalProfitAllTime)]]
       )

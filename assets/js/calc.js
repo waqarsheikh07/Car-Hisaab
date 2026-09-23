@@ -159,6 +159,72 @@
     return !(cost !== null && sale !== null) && num(car.profit_override) !== null;
   }
 
+  /* ---------- who funded the car, and what that earns ---------------------
+     Profit is split into two pots:
+
+       · the MONEY pot  (capital_reward_percent, 50 by default) is divided by
+         who actually paid for the car;
+       · the WORK pot   (the rest) rewards sourcing, fixing and selling it.
+
+     The work pot's split is not a separate setting — it is derived so that a
+     car the investor funds alone lands exactly on the agreed baseline split.
+     With the defaults (baseline 50/50, money pot 50) the investor supplies all
+     the capital and so takes the whole money pot, the partner takes the whole
+     work pot, and the result is the 50/50 that was already in force. Nothing
+     changes until the partner actually puts money into a car.
+     ----------------------------------------------------------------------- */
+
+  function capitalRewardPercent(settings) {
+    var c = num(settings && settings.capital_reward_percent);
+    if (c === null) c = 50;
+    return Math.min(100, Math.max(0, c));
+  }
+
+  function baselineInvestorPercent(settings) {
+    var s = num(settings && settings.profit_split_investor);
+    if (s === null) s = 50;
+    return Math.min(100, Math.max(0, s));
+  }
+
+  // Share of the work pot owed to the investor, back-solved from the baseline.
+  function investorWorkFraction(settings) {
+    var C = capitalRewardPercent(settings);
+    var S = baselineInvestorPercent(settings);
+    if (C >= 100) return 0;
+    return Math.min(1, Math.max(0, (S - C) / (100 - C)));
+  }
+
+  // No funding recorded means the investor paid for it alone — the normal case.
+  function fundingOf(car) {
+    var f = car && car.funding;
+    var investor = num(f && f.investor);
+    var partner = num(f && f.partner);
+    if (investor === null && partner === null) {
+      return { investor: null, partner: null, total: null, investorFraction: 1, recorded: false };
+    }
+    investor = investor === null ? 0 : investor;
+    partner = partner === null ? 0 : partner;
+    var total = investor + partner;
+    return {
+      investor: investor,
+      partner: partner,
+      total: total,
+      investorFraction: total > 0 ? investor / total : 1,
+      recorded: true
+    };
+  }
+
+  // The two percentages this car's profit divides by.
+  function shareOf(car, settings) {
+    var C = capitalRewardPercent(settings);
+    var workFraction = investorWorkFraction(settings);
+    var fi = fundingOf(car).investorFraction;
+    var investorPercent = C * fi + (100 - C) * workFraction;
+    investorPercent = Math.min(100, Math.max(0, investorPercent));
+    return { investorPercent: investorPercent, partnerPercent: 100 - investorPercent };
+  }
+
+  // Flat split, still used where a figure is not tied to one car.
   function splitShares(profitValue, settings) {
     var p = num(profitValue);
     if (p === null) return { mine: null, partner: null };
@@ -167,6 +233,17 @@
     var partner = num(settings && settings.profit_split_partner);
     if (partner === null) partner = 100 - mine;
     return { mine: p * mine / 100, partner: p * partner / 100 };
+  }
+
+  // Split one car's profit by that car's own percentages.
+  function carShares(car, profitValue, settings) {
+    var p = num(profitValue);
+    if (p === null) return { mine: null, partner: null };
+    var share = shareOf(car, settings);
+    return {
+      mine: p * share.investorPercent / 100,
+      partner: p * share.partnerPercent / 100
+    };
   }
 
   function roiPercent(car) {
@@ -184,8 +261,21 @@
   // One object with every derived figure a view needs for a car.
   function carSummary(car, settings, today) {
     var p = profit(car);
-    var shares = splitShares(p, settings);
+    var shares = carShares(car, p, settings);
+    var share = shareOf(car, settings);
+    var funding = fundingOf(car);
+    var cost = totalCost(car);
     return {
+      funding: funding,
+      investorPercent: share.investorPercent,
+      partnerPercent: share.partnerPercent,
+      // What each side actually has in this car. With no funding recorded the
+      // investor paid for all of it, so their money is the whole cost.
+      myCapital: funding.recorded ? funding.investor : cost,
+      partnerCapital: funding.recorded ? funding.partner : (cost === null ? null : 0),
+      // Flags a funding record that does not add up to what the car cost.
+      fundingMismatch: (funding.recorded && cost !== null && Math.abs(funding.total - cost) > 1)
+        ? funding.total - cost : null,
       id: car.id,
       car: car,
       name: car.name,
@@ -222,12 +312,17 @@
 
     var totalCapitalInvested = sum(capital, function (c) { return c.amount; });
     var capitalDeployed = sum(unsold, function (s) { return s.totalCost; });
+    // Only the investor's own money — the figure that says how much of YOUR
+    // capital is currently stuck in unsold stock.
+    var myCapitalDeployed = sum(unsold, function (s) { return s.myCapital; });
+    var partnerCapitalDeployed = sum(unsold, function (s) { return s.partnerCapital; });
     var totalPaidToMe = sum(payouts, function (p) { return p.amount; });
-    var capitalIdle = totalCapitalInvested - capitalDeployed - totalPaidToMe;
+    var capitalIdle = totalCapitalInvested - myCapitalDeployed - totalPaidToMe;
 
     var totalProfit = sum(sold, function (s) { return s.profit; });
-    var splits = splitShares(totalProfit, settings);
-    var myProfitEarned = splits.mine;
+    // Summed per car, because each car can divide on its own percentages.
+    var myProfitEarned = sum(sold, function (s) { return s.myShare; });
+    var partnerProfitEarned = sum(sold, function (s) { return s.partnerShare; });
     var outstandingToMe = myProfitEarned - totalPaidToMe;
 
     var soldWithProfit = sold.filter(function (s) { return s.profit !== null; });
@@ -242,10 +337,15 @@
       unsold: unsold,
       totalCapitalInvested: totalCapitalInvested,
       capitalDeployed: capitalDeployed,
+      myCapitalDeployed: myCapitalDeployed,
+      partnerCapitalDeployed: partnerCapitalDeployed,
+      partnerFundedCars: unsold.concat(sold).filter(function (s) {
+        return s.funding.recorded && s.funding.partner > 0;
+      }),
       capitalIdle: capitalIdle,
       totalProfitAllTime: totalProfit,
       myProfitEarned: myProfitEarned,
-      partnerProfitEarned: splits.partner,
+      partnerProfitEarned: partnerProfitEarned,
       totalPaidToMe: totalPaidToMe,
       outstandingToMe: outstandingToMe,
       paidRatio: myProfitEarned > 0 ? Math.min(1, totalPaidToMe / myProfitEarned) : 0,
@@ -287,6 +387,16 @@
         cars: estimated.map(function (s) { return s.name; }),
         message: estimated.length + ' sold car' + (estimated.length > 1 ? 's use' : ' uses') +
           ' a reported profit figure instead of real cost and sale numbers.'
+      });
+    }
+    var mismatched = summaries.filter(function (s) { return s.fundingMismatch !== null; });
+    if (mismatched.length) {
+      gaps.push({
+        key: 'funding_mismatch',
+        count: mismatched.length,
+        cars: mismatched.map(function (s) { return s.name; }),
+        message: mismatched.length + ' car' + (mismatched.length > 1 ? 's have' : ' has') +
+          ' a funding split that does not add up to what the car cost.'
       });
     }
     if (noSalePrice.length) {
@@ -344,7 +454,7 @@
       var soldSummaries = sold.map(function (c) { return carSummary(c, settings, today); });
 
       var monthProfit = sum(soldSummaries, function (s) { return s.profit; });
-      var myShare = splitShares(monthProfit, settings).mine || 0;
+      var myShare = sum(soldSummaries, function (s) { return s.myShare; });
       var paid = sum(payouts.filter(function (p) { return monthKey(p.date) === key; }),
         function (p) { return p.amount; });
       var capitalIn = sum(capital.filter(function (c) { return monthKey(c.date) === key; }),
@@ -454,7 +564,9 @@
     shorthand: shorthand, formatPercent: formatPercent, formatDate: formatDate,
     expensesTotal: expensesTotal, expensesByCategory: expensesByCategory,
     totalCost: totalCost, profit: profit, isProfitEstimated: isProfitEstimated,
-    splitShares: splitShares, roiPercent: roiPercent, daysHeld: daysHeld,
+    splitShares: splitShares, carShares: carShares, roiPercent: roiPercent, daysHeld: daysHeld,
+    fundingOf: fundingOf, shareOf: shareOf,
+    capitalRewardPercent: capitalRewardPercent, investorWorkFraction: investorWorkFraction,
     carSummary: carSummary, businessSummary: businessSummary, dataGaps: dataGaps,
     monthRange: monthRange, monthlyReport: monthlyReport, timeline: timeline,
     toCSV: toCSV

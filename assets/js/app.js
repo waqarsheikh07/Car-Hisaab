@@ -771,6 +771,20 @@
     car.image_url = v.image_url || '';
     car.buyer_note = v.buyer_note || '';
     car.notes = v.notes || '';
+
+    // Who paid for it. Both blank means the investor funded it alone, which is
+    // the default, so the field is removed rather than stored as zeroes.
+    var fv = readForm('[data-form="funding"]');
+    var fundedByMe = C.num(fv.funding_investor);
+    var fundedByPartner = C.num(fv.funding_partner);
+    if (fundedByMe === null && fundedByPartner === null) {
+      delete car.funding;
+    } else {
+      car.funding = {
+        investor: fundedByMe === null ? 0 : fundedByMe,
+        partner: fundedByPartner === null ? 0 : fundedByPartner
+      };
+    }
     if (car.purchase_date && car.sale_date && car.sale_date < car.purchase_date) {
       toast('Sale date is before the purchase date — check it', 'err');
       return;
@@ -791,11 +805,19 @@
       toast('The two shares must add up to 100 (currently ' + (mine + theirs) + ')', 'err');
       return;
     }
+    var dial = C.num(v.capital_reward_percent);
+    if (dial === null) dial = 50;
+    if (dial < 0 || dial > 100) { toast('The money share must be 0–100', 'err'); return; }
+    if (dial > mine) {
+      toast('The money share cannot be more than your baseline share of ' + mine + '%', 'err');
+      return;
+    }
     state.data.settings = Object.assign({}, state.data.settings, {
       investor_name: v.investor_name || 'Waqar',
       partner_name: v.partner_name || 'Usama',
       profit_split_investor: mine,
-      profit_split_partner: theirs
+      profit_split_partner: theirs,
+      capital_reward_percent: dial
     });
     persist('settings', state.data.settings, 'Update profit split');
   }

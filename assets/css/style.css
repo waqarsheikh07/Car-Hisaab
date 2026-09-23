@@ -483,6 +483,20 @@ svg.ic { width: 16px; height: 16px; flex: none; }
   width: 0;
   transition: width 900ms var(--ease);
 }
+/* Two-tone bar: the filled part is the investor's share, the track behind it
+   is the partner's. Both hues come from the validated categorical palette. */
+.split-track {
+  position: relative; height: 10px; overflow: hidden;
+  border-radius: var(--pill);
+  background: var(--series-2);
+  border: 1px solid var(--line);
+}
+.split-fill {
+  height: 100%;
+  background: var(--series-1);
+  transition: width 600ms var(--ease);
+}
+
 .progress-legend {
   display: flex; flex-wrap: wrap; gap: 6px 16px;
   margin-top: 9px; font-size: 12px; color: var(--ink-2);

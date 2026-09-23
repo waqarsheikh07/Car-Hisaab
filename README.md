@@ -22,7 +22,8 @@ is wired up correctly:
 | Paid to you so far | **PKR 70,000** |
 | **Outstanding to you** | **PKR 137,500** |
 
-`node tests/calc.test.js` asserts these and 39 other cases. Run it any time you change the
+`node tests/calc.test.js` asserts these and 69 other cases, including the partner-funded
+split described below. Run it any time you change the
 money maths.
 
 ---
@@ -93,7 +94,8 @@ Hand this section to your partner — it explains each figure in plain language.
 |---|---|
 | **Total cost** | Purchase price + every expense logged against the car (repairs, parts, paint, transport, registration, commission, other). |
 | **Profit** | Sale price − total cost. Blank until the car is sold. |
-| **Your share / Partner share** | Profit split by the percentages in Settings (50/50 by default). |
+| **Your share / Partner share** | Profit split by *this car's own* percentages — see **When the partner helps pay** below. On a car you funded alone this is the agreed 50/50. |
+| **Who paid** | How much of the car was your money and how much was the partner's. Blank means you paid for all of it. |
 | **ROI** | Profit ÷ total cost, as a percentage. Tells you how hard the money worked, independent of deal size. |
 | **Days held** | Purchase date to sale date. For an unsold car, purchase date to today — this is how long your capital has been stuck. |
 
@@ -102,12 +104,55 @@ Hand this section to your partner — it explains each figure in plain language.
 | Field | How it is worked out |
 |---|---|
 | **Capital invested** | Everything on the Capital screen added up. |
-| **Tied up in unsold cars** | Total cost of every car not yet sold. This money is currently unavailable. |
-| **Capital not working** | Capital invested − tied up in unsold cars − paid back to you. Money that should be buying cars but is not. |
+| **Tied up in unsold cars** | **Your** money in cars not yet sold. If the partner part-funded a car, only your side of it counts here. |
+| **Partner's money in stock** | His money in unsold cars. Shown separately and excluded from every figure about you. Only appears when he has actually funded something. |
+| **Capital not working** | Your capital invested − your money tied up in unsold cars − paid back to you. Money of yours that should be buying cars but is not. |
 | **Total profit all time** | Profit of every sold car added up. |
 | **Your profit earned** | Your percentage of that total. What you are *owed*. |
 | **Paid to you** | Everything on the Payouts screen added up. What you have actually *received*. |
 | **Outstanding to you** | **Your profit earned − paid to you.** The headline figure. If it is large, profit has been booked on paper but has not reached your account. |
+
+### When the partner helps pay
+
+Normally you fund the cars and the partner does the work, which is what the 50/50 is
+for. When he also puts money into a car, that car alone divides differently.
+
+Profit splits into two pots:
+
+- the **money pot** — 50% of profit by default — divided exactly the way the car was
+  paid for, so every rupee either of you put in earns the same rate;
+- the **work pot** — the rest — for sourcing it, fixing it and selling it, which is his.
+
+A car you paid for alone gives you the whole money pot and him the whole work pot:
+**50/50, unchanged**. Nothing in your existing figures moves.
+
+Worked example. A 5,000,000 car, 2,000,000 yours and 3,000,000 his, sold for 5,400,000:
+
+```
+profit                                        400,000
+
+money pot (50%)                               200,000
+  you      2,000,000 of 5,000,000  = 40%   ->  80,000   (4.0% on your money)
+  partner  3,000,000 of 5,000,000  = 60%   -> 120,000   (4.0% on his money)
+
+work pot (50%)                                200,000
+  partner                                   -> 200,000
+
+  YOU                                           80,000   = 20% of this car
+  PARTNER                                      320,000   = 80% of this car
+```
+
+Both of you earn the same 4% on every rupee of capital; he earns the work fee on top.
+The car detail screen shows those two percentages and the split bar for every car.
+
+**The dial.** Settings → *Of profit, how much rewards the money* controls the size of
+the money pot. At **100** profit follows the money exactly and the work counts for
+nothing — a car you fund alone becomes 100% yours. At **0** funding is ignored and
+everything stays 50/50. It cannot be set above your baseline share, because that would
+imply a negative work share. Leave it at 50 unless you and your partner agree otherwise.
+
+This is an accounting model, not an agreement. **Agree the numbers with your partner
+before relying on them** — the dial changes what you are owed.
 
 ### The monthly table
 
@@ -169,6 +214,18 @@ Everything lives in `data/`. You can edit these by hand on GitHub if you prefer.
 }
 ```
 
+Add `funding` to a car only when the partner helped pay for it:
+
+```json
+"funding": { "investor": 2000000, "partner": 3000000 }
+```
+
+Leave it out and the car is treated as entirely yours, which is the normal case. If the
+two figures do not add up to what the car cost, the app says so rather than quietly
+using them.
+
+**`settings.json`** also carries `capital_reward_percent` (the money pot, default 50).
+
 **`payouts.json`** — money that actually reached you. `car_id` is optional; leave it out
 for a lump sum.
 
@@ -200,7 +257,7 @@ assets/js/art.js            illustrations and the car placeholder, inlined SVG
 assets/js/seed.js           generated — starter data bundled for offline use
 assets/vendor/              Chart.js 4.4.1 (MIT), vendored
 data/*.json                 the database
-tests/calc.test.js          43 assertions over the money maths
+tests/calc.test.js          73 assertions over the money maths
 scripts/build-seed.js       regenerates seed.js from data/
 ```
 

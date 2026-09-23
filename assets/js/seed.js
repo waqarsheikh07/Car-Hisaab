@@ -170,6 +170,7 @@ window.SEED_DATA = {
     "partner_name": "Usama",
     "investor_name": "Waqar",
     "currency": "PKR",
-    "business_name": "Car Investment Tracker"
+    "business_name": "Car Investment Tracker",
+    "capital_reward_percent": 50
   }
 };

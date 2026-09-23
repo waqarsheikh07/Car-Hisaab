@@ -205,6 +205,57 @@
       (opts.hint ? '<div class="hint">' + h(opts.hint) + '</div>' : '') + '</div>';
   }
 
+  // Shown on the car detail page whenever the partner put money into a car, and
+  // as an always-present pair of fields so the split can be recorded.
+  function fundingPanel(c, settings, can) {
+    var investor = settings.investor_name || 'You';
+    var partner = settings.partner_name || 'Partner';
+    var f = c.funding;
+    var shared = f.recorded && f.partner > 0;
+
+    return '' +
+      '<div class="card">' +
+        '<div class="card-head"><div><h2>Who paid for this car</h2>' +
+          '<div class="sub">' + (shared
+            ? 'Funded by both of you, so this car does not divide 50/50'
+            : 'Leave both blank when you paid for all of it') + '</div></div></div>' +
+        '<div class="card-body">' +
+          '<form data-form="funding" class="form-grid">' +
+            field(h(investor) + '’s money', 'funding_investor', f.recorded ? f.investor : null,
+              { type: 'number', disabled: !can, placeholder: 'PKR' }) +
+            field(h(partner) + '’s money', 'funding_partner', f.recorded ? f.partner : null,
+              { type: 'number', disabled: !can, placeholder: 'PKR' }) +
+          '</form>' +
+          (c.fundingMismatch !== null
+            ? '<div class="banner" data-tone="warn" style="margin-top:12px">' + icon('alert-triangle') +
+              '<div>These add up to ' + C.formatPKR(f.total) + ', but the car cost ' +
+              C.formatPKR(c.totalCost) + ' — a difference of ' +
+              C.formatPKR(Math.abs(c.fundingMismatch)) + '.</div></div>'
+            : '') +
+          '<div class="split-bar" style="margin-top:14px">' +
+            '<div class="split-track">' +
+              '<div class="split-fill" style="width:' + c.investorPercent.toFixed(2) + '%"></div>' +
+            '</div>' +
+            '<div class="progress-legend">' +
+              '<span>' + h(investor) + ' <b>' + C.formatPercent(c.investorPercent) + '</b>\u00a0</span>' +
+              '<span>' + h(partner) + ' <b>' + C.formatPercent(c.partnerPercent) + '</b>\u00a0</span>' +
+              '<span class="muted">of this car’s profit</span>' +
+            '</div>' +
+          '</div>' +
+          (shared
+            ? '<div class="hint" style="margin-top:10px">' +
+              'Half the profit rewards the money and splits ' +
+              C.formatPercent(f.investorFraction * 100, 0) + ' / ' +
+              C.formatPercent(100 - f.investorFraction * 100, 0) + ' the way it was funded. ' +
+              'The other half rewards the work and goes to ' + h(partner) + '.</div>'
+            : '<div class="hint" style="margin-top:10px">' +
+              'You funded this one alone, so it splits on your normal ' +
+              C.formatPercent(c.investorPercent, 0) + ' / ' +
+              C.formatPercent(c.partnerPercent, 0) + ' agreement.</div>') +
+        '</div>' +
+      '</div>';
+  }
+
   function waterfall(c, settings) {
     var t = Charts.theme();
     var rows = '';
@@ -236,10 +287,10 @@
     var investor = settings.investor_name || 'You';
     var partner = settings.partner_name || 'Partner';
     rows += '<div class="wf-row is-sub"><span class="wf-label">' + h(investor) + '’s share (' +
-      (settings.profit_split_investor === undefined ? 50 : settings.profit_split_investor) + '%)</span>' +
+      C.formatPercent(c.investorPercent) + ')</span>' +
       '<span class="wf-value">' + money(c.myShare) + '</span></div>';
     rows += '<div class="wf-row is-sub"><span class="wf-label">' + h(partner) + '’s share (' +
-      (settings.profit_split_partner === undefined ? 50 : settings.profit_split_partner) + '%)</span>' +
+      C.formatPercent(c.partnerPercent) + ')</span>' +
       '<span class="wf-value">' + money(c.partnerShare) + '</span></div>';
 
     return '<div class="waterfall">' + rows + '</div>';
@@ -279,7 +330,7 @@
         }).join('')
       : '<p class="muted" style="margin:4px 0 0">Nothing spent on this car yet.</p>';
 
-    var left = '' +
+    var left = fundingPanel(c, state.data.settings, can) +
       '<div class="card">' +
         '<div class="card-head"><div><h2>Cost breakdown</h2>' +
           '<div class="sub">Purchase price, then every rupee spent, then what came back.</div></div></div>' +
@@ -571,9 +622,27 @@
           '<form data-form="settings" class="form-grid">' +
             field('Your name', 'investor_name', st.investor_name, {}) +
             field('Partner name', 'partner_name', st.partner_name, {}) +
-            field('Your share %', 'profit_split_investor', st.profit_split_investor, { type: 'number' }) +
+            field('Your share %', 'profit_split_investor', st.profit_split_investor, {
+              type: 'number', hint: 'When you fund the car alone' }) +
             field('Partner share %', 'profit_split_partner', st.profit_split_partner, { type: 'number' }) +
+            field('Of profit, how much rewards the money %', 'capital_reward_percent',
+              st.capital_reward_percent === undefined ? 50 : st.capital_reward_percent, {
+                span2: true, type: 'number',
+                hint: 'The rest rewards the work. Only matters on cars ' +
+                      h(st.partner_name || 'your partner') + ' helped pay for.'
+              }) +
           '</form>' +
+          '<div class="banner" data-tone="info" style="margin-top:14px">' + icon('info') +
+            '<div><div class="banner-title">How a shared car divides</div>' +
+            'Profit splits into two pots. The <b>money pot</b> (' +
+            (st.capital_reward_percent === undefined ? 50 : st.capital_reward_percent) +
+            '% of profit) is divided exactly the way the car was paid for, so every ' +
+            'rupee either of you put in earns the same rate. The <b>work pot</b> (the rest) ' +
+            'goes to ' + h(st.partner_name || 'your partner') + ' for sourcing, fixing and ' +
+            'selling it. On a car you paid for alone this lands on ' +
+            (st.profit_split_investor === undefined ? 50 : st.profit_split_investor) + '/' +
+            (st.profit_split_partner === undefined ? 50 : st.profit_split_partner) +
+            ' exactly as before.</div></div>' +
           '<div style="margin-top:14px">' +
             '<button class="btn btn-primary" data-action="save-settings"' +
               (state.canWrite ? '' : ' disabled') + '>' + icon('check') + 'Save split</button>' +

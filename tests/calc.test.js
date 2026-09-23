@@ -87,5 +87,66 @@ const s70 = C.businessSummary({ ...data, settings: { profit_split_investor: 70, 
 is(s70.myProfitEarned, 290500, '70% split: my profit');
 is(s70.outstandingToMe, 220500, '70% split: outstanding');
 
+console.log('\n— Funding: cars the investor pays for alone (the normal case) —');
+const solo = { id: 'solo', name: 'Solo', status: 'sold', purchase_date: '2026-01-01',
+  sale_date: '2026-02-01', purchase_price: 1000000, sale_price: 1400000, expenses: [] };
+is(C.shareOf(solo, data.settings).investorPercent, 50, 'no funding recorded -> investor 50%');
+is(C.shareOf(solo, data.settings).partnerPercent, 50, 'no funding recorded -> partner 50%');
+is(C.carShares(solo, C.profit(solo), data.settings).mine, 200000, 'solo-funded car: your half');
+is(C.fundingOf(solo).recorded, false, 'funding not recorded');
+is(C.fundingOf(solo).investorFraction, 1, 'treated as 100% investor money');
+is(C.carSummary(solo, data.settings, TODAY).myCapital, 1000000, 'all of the cost is your money');
+
+console.log('\n— Funding: the 2,000,000 / 3,000,000 example —');
+const shared = { id: 'shared', name: 'Shared', status: 'sold', purchase_date: '2026-01-01',
+  sale_date: '2026-02-01', purchase_price: 5000000, sale_price: 5400000, expenses: [],
+  funding: { investor: 2000000, partner: 3000000 } };
+is(C.profit(shared), 400000, 'profit on the shared car');
+is(C.fundingOf(shared).investorFraction, 0.4, 'you funded 40% of it');
+is(C.shareOf(shared).investorPercent, 20, 'your share of THIS car');
+is(C.shareOf(shared).partnerPercent, 80, 'Usama share of this car');
+is(C.carShares(shared, 400000, data.settings).mine, 80000, 'your profit on it');
+is(C.carShares(shared, 400000, data.settings).partner, 320000, 'Usama profit on it');
+is(C.carSummary(shared, data.settings, TODAY).myCapital, 2000000, 'your money in the car');
+is(C.carSummary(shared, data.settings, TODAY).partnerCapital, 3000000, 'his money in the car');
+
+console.log('\n— Every rupee of capital earns the same rate —');
+const moneyPot = 400000 * 0.5;
+is(Math.round((moneyPot * 0.4) / 2000000 * 10000) / 100, 4, 'your return on capital %');
+is(Math.round((moneyPot * 0.6) / 3000000 * 10000) / 100, 4, 'his return on capital %');
+is(400000 * 0.5, 200000, 'the work pot, all of which is his');
+
+console.log('\n— The money/work dial —');
+const allCapital = { capital_reward_percent: 100, profit_split_investor: 50, profit_split_partner: 50 };
+is(C.shareOf(shared, allCapital).investorPercent, 40, 'dial at 100: pure funding split');
+is(C.shareOf(solo, allCapital).investorPercent, 100, 'dial at 100: solo-funded car is all yours');
+const allWork = { capital_reward_percent: 0, profit_split_investor: 50, profit_split_partner: 50 };
+is(C.shareOf(shared, allWork).investorPercent, 50, 'dial at 0: funding ignored, stays 50/50');
+
+console.log('\n— Business totals with a partner-funded car —');
+const mixed = { cars: data.cars.concat([shared]), payouts: data.payouts,
+                capital: data.capital, settings: data.settings };
+const bm = C.businessSummary(mixed, TODAY);
+is(bm.totalProfitAllTime, 815000, 'total profit including the shared car');
+is(bm.myProfitEarned, 287500, 'your profit = 207,500 + 80,000');
+is(bm.partnerProfitEarned, 527500, 'his profit = 207,500 + 320,000');
+is(bm.myProfitEarned + bm.partnerProfitEarned, bm.totalProfitAllTime, 'the two shares reconcile');
+is(bm.outstandingToMe, 217500, 'outstanding to you');
+
+console.log('\n— Only your capital counts as yours —');
+const held = { id: 'held', name: 'Held', status: 'in_stock', purchase_date: '2026-09-01',
+  purchase_price: 5000000, sale_date: null, sale_price: null, expenses: [],
+  funding: { investor: 2000000, partner: 3000000 } };
+const stock = C.businessSummary({ cars: [held], payouts: [], capital: [{ id:'c', date:'2026-01-01', amount: 7700000 }],
+  settings: data.settings }, TODAY);
+is(stock.capitalDeployed, 5000000, 'total business money in stock');
+is(stock.myCapitalDeployed, 2000000, 'YOUR money in stock');
+is(stock.partnerCapitalDeployed, 3000000, 'his money in stock');
+is(stock.capitalIdle, 5700000, 'your idle capital ignores his 3,000,000');
+
+console.log('\n— A funding split that does not add up is flagged —');
+const wrong = Object.assign({}, shared, { funding: { investor: 2000000, partner: 1000000 } });
+is(C.carSummary(wrong, data.settings, TODAY).fundingMismatch, -2000000, 'mismatch reported');
+
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

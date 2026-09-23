@@ -249,7 +249,7 @@
     var t = theme();
     var idle = Math.max(0, summary.capitalIdle);
     var slices = [
-      { label: 'Tied up in unsold cars', value: Math.max(0, summary.capitalDeployed), color: t.series[0] },
+      { label: 'Tied up in unsold cars', value: Math.max(0, summary.myCapitalDeployed), color: t.series[0] },
       { label: 'Idle capital', value: idle, color: t.series[1] },
       { label: 'Profit booked', value: Math.max(0, summary.totalProfitAllTime), color: t.series[2] }
     ].filter(function (s) { return s.value > 0; });
