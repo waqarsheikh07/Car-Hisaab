@@ -105,7 +105,15 @@
     "profit_override": null,
     "buyer_note": "",
     "needs_confirmation": true,
-    "expenses": [],
+    "expenses": [
+      {
+        "id": "e1",
+        "date": "2026-09-23",
+        "category": "repair",
+        "amount": 22000,
+        "note": ""
+      }
+    ],
     "notes": "Purchase price not shared yet. Ask Usama. Purchase date is an estimate."
   },
   {
