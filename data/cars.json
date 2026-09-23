@@ -38,7 +38,15 @@
     "profit_override": null,
     "buyer_note": "",
     "needs_confirmation": true,
-    "expenses": [],
+    "expenses": [
+      {
+        "id": "e1",
+        "date": "2026-06-18",
+        "category": "repair",
+        "amount": 40000,
+        "note": ""
+      }
+    ],
     "notes": "2,900,000 was quoted as total cost. If any of it was repair spend, split it out into expenses so the cost breakdown is accurate. Dates are estimates."
   },
   {
