@@ -80,7 +80,15 @@
     "profit_override": null,
     "buyer_note": "",
     "needs_confirmation": true,
-    "expenses": [],
+    "expenses": [
+      {
+        "id": "e1",
+        "date": "2026-07-23",
+        "category": "repair",
+        "amount": 15000,
+        "note": ""
+      }
+    ],
     "notes": "Only the profit figure (50,000) was shared. Replace profit_override with real purchase_price, expenses and sale_price. Dates are estimates."
   },
   {
