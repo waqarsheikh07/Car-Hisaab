@@ -31,7 +31,7 @@
     "registration": "",
     "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRurc58XjG0SriPYtPh_U5_pBkfFS4UPEBPJykiKGYrdl7iNH6aU4pUPzQ&s=10",
     "purchase_date": "2026-06-25",
-    "purchase_price": 2900000,
+    "purchase_price": 2860000,
     "status": "sold",
     "sale_date": "2026-09-05",
     "sale_price": 2975000,
@@ -47,7 +47,7 @@
         "note": ""
       }
     ],
-    "notes": "2,900,000 was quoted as total cost. If any of it was repair spend, split it out into expenses so the cost breakdown is accurate. Dates are estimates."
+    "notes": ""
   },
   {
     "id": "grande-2019",
