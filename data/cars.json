@@ -157,22 +157,5 @@
     "needs_confirmation": true,
     "expenses": [],
     "notes": "Purchase price not shared yet. Ask Usama. Purchase date is an estimate."
-  },
-  {
-    "id": "xe-2001",
-    "name": "XE",
-    "model_year": 2001,
-    "registration": "",
-    "image_url": "",
-    "purchase_date": "2026-06-20",
-    "purchase_price": null,
-    "status": "in_stock",
-    "sale_date": null,
-    "sale_price": null,
-    "profit_override": null,
-    "buyer_note": "",
-    "needs_confirmation": true,
-    "expenses": [],
-    "notes": "Purchase price not shared yet. Ask Usama. Purchase date is an estimate."
   }
 ]
