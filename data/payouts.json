@@ -6,5 +6,13 @@
     "method": "bank",
     "note": "First profit share — exactly half of Swift's 140,000 profit",
     "car_id": "swift-2018"
+  },
+  {
+    "id": "p2",
+    "date": "2026-09-13",
+    "amount": 100000,
+    "method": "bank",
+    "note": "for reamining",
+    "car_id": null
   }
 ]
