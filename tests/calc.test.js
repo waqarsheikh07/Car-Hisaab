@@ -4,12 +4,18 @@ const fs = require('fs');
 const path = require('path');
 const C = require('../assets/js/calc.js');
 
-const read = (f) => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', f), 'utf8'));
-const data = {
-  cars: read('cars.json'),
-  payouts: read('payouts.json'),
-  capital: read('capital.json'),
-  settings: read('settings.json')
+// The maths is pinned against a FROZEN fixture, never against data/*.json.
+// Those are live business records that change every time a car is bought or a
+// payment arrives, so asserting against them would turn ordinary data entry
+// into a failing test suite. The live files get invariant checks at the end
+// instead — properties that must hold whatever the numbers happen to be.
+const data = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixture.json'), 'utf8'));
+const readLive = (f) => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', f), 'utf8'));
+const live = {
+  cars: readLive('cars.json'),
+  payouts: readLive('payouts.json'),
+  capital: readLive('capital.json'),
+  settings: readLive('settings.json')
 };
 
 const TODAY = '2026-09-13';
@@ -147,6 +153,38 @@ is(stock.capitalIdle, 5700000, 'your idle capital ignores his 3,000,000');
 console.log('\n— A funding split that does not add up is flagged —');
 const wrong = Object.assign({}, shared, { funding: { investor: 2000000, partner: 1000000 } });
 is(C.carSummary(wrong, data.settings, TODAY).fundingMismatch, -2000000, 'mismatch reported');
+
+console.log('\n— Invariants over the REAL data in data/*.json —');
+const L = C.businessSummary(live, TODAY);
+is(Array.isArray(live.cars), true, 'cars.json is an array');
+is(Number.isFinite(L.totalProfitAllTime), true, 'total profit is a real number');
+is(Math.round((L.myProfitEarned + L.partnerProfitEarned) * 100) / 100,
+   Math.round(L.totalProfitAllTime * 100) / 100, 'the two profit shares add up to the total');
+is(Math.round((L.myProfitEarned - L.totalPaidToMe) * 100) / 100,
+   Math.round(L.outstandingToMe * 100) / 100, 'outstanding = earned minus paid');
+is(live.cars.every(c => !!c.id), true, 'every car has an id');
+is(new Set(live.cars.map(c => c.id)).size, live.cars.length, 'car ids are unique');
+is(live.cars.every(c => C.STATUSES.indexOf(c.status) !== -1), true, 'every status is valid');
+is(live.cars.every(c => {
+  const cs = C.carSummary(c, live.settings, TODAY);
+  return cs.investorPercent >= 0 && cs.investorPercent <= 100 &&
+         Math.round((cs.investorPercent + cs.partnerPercent) * 1e6) / 1e6 === 100;
+}), true, "every car's two percentages are valid and sum to 100");
+is(live.cars.every(c => {
+  const cs = C.carSummary(c, live.settings, TODAY);
+  return cs.profit === null || Number.isFinite(cs.profit);
+}), true, 'no car has a NaN profit');
+is(live.cars.every(c => (c.expenses || []).every(e => C.num(e.amount) !== null)), true,
+   'every expense has a usable amount');
+is(live.payouts.every(x => C.num(x.amount) !== null), true, 'every payout has a usable amount');
+const liveMonths = C.monthlyReport(live, TODAY);
+is(Math.round(liveMonths[liveMonths.length - 1].outstanding * 100) / 100,
+   Math.round(L.outstandingToMe * 100) / 100,
+   'the monthly table lands on the dashboard figure');
+console.log('   live: profit ' + C.formatPKR(L.totalProfitAllTime) +
+            ' | your share ' + C.formatPKR(L.myProfitEarned) +
+            ' | paid ' + C.formatPKR(L.totalPaidToMe) +
+            ' | outstanding ' + C.formatPKR(L.outstandingToMe));
 
 console.log(`\n${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

@@ -10,20 +10,24 @@ straight from the browser.
 
 ---
 
-## The four numbers to check first
+## Testing
 
-With the starter data loaded, the dashboard must show exactly this. If it does, the maths
-is wired up correctly:
+`node tests/calc.test.js` — 85 assertions, and it needs no browser.
 
-| Figure | Value |
-|---|---|
-| Total profit booked | **PKR 415,000** |
-| Your share (50%) | **PKR 207,500** |
-| Paid to you so far | **PKR 70,000** |
-| **Outstanding to you** | **PKR 137,500** |
+The money maths is pinned against a **frozen fixture** in `tests/fixture.json`, the
+original eight-car starter set, where the totals must come out at exactly
+415,000 profit / 207,500 your share / 70,000 paid / 137,500 outstanding. That fixture
+never changes, so the suite tests the *calculations* rather than the current state of
+the business.
 
-`node tests/calc.test.js` asserts these and 69 other cases, including the partner-funded
-split described below. Run it any time you change the
+Your live `data/*.json` is checked separately, by invariants that must hold no matter
+what the numbers are: ids unique, statuses valid, every expense and payout a usable
+number, no car with a NaN profit, each car's two percentages between 0 and 100 and
+summing to 100, the two profit shares adding up to the total, outstanding equalling
+earned minus paid, and the monthly table's final row landing on the dashboard figure.
+
+That separation is deliberate. Asserting against the live files would mean every car
+you buy breaks the test suite. Run it any time you change the
 money maths.
 
 ---
