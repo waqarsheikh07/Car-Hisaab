@@ -117,9 +117,9 @@
           '<span class="car-card-title"><h3>' + h(c.name) + '</h3>' +
             '<span class="yr">' + (c.model_year ? h(c.model_year) : 'year ?') + '</span></span>' +
           '<span class="car-card-figs">' +
-            '<span><span class="fig-label">' + (c.isSold ? 'Profit' : 'Tied up') + '</span>' +
+            '<span class="fig"><span class="fig-label">' + (c.isSold ? 'Profit' : 'Tied up') + '</span>' +
               '<span class="fig-value">' + (c.isSold ? signed(c.profit) : money(c.totalCost)) + '</span></span>' +
-            '<span style="text-align:right"><span class="fig-label">' +
+            '<span class="fig fig-end"><span class="fig-label">' +
               (c.isSold ? 'Your half' : 'Spent on it') + '</span>' +
               '<span class="fig-value">' + (c.isSold ? money(c.myShare) : money(c.expensesTotal || null)) +
               '</span></span>' +

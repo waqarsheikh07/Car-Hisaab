@@ -654,7 +654,15 @@ tr.is-empty-month td { color: var(--ink-3); }
 }
 .car-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .car-thumb .ph { width: 62%; opacity: 0.9; }
-.car-thumb .badge { position: absolute; top: 9px; left: 9px; backdrop-filter: blur(6px); }
+/* Sitting on a photograph, a translucent tint is unreadable — the car behind it
+   can be any colour. Solid card surface, with the status carried by the text and
+   border colour it already has. */
+.car-thumb .badge {
+  position: absolute; top: 10px; left: 10px;
+  background: var(--surface);
+  box-shadow: 0 1px 4px rgba(11, 11, 11, 0.3);
+  backdrop-filter: none;
+}
 .car-thumb .thumb-days {
   position: absolute; bottom: 9px; right: 9px;
   font-size: 11px; font-weight: 600;
@@ -668,9 +676,24 @@ tr.is-empty-month td { color: var(--ink-3); }
 .car-card-title { display: flex; align-items: baseline; gap: 7px; }
 .car-card-title h3 { font-size: 15px; }
 .car-card-title .yr { font-size: 12px; color: var(--ink-3); }
-.car-card-figs { display: flex; justify-content: space-between; gap: 10px; }
-.fig-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-3); font-weight: 600; }
-.fig-value { font-size: 14px; font-weight: 620; font-variant-numeric: tabular-nums; margin-top: 1px; }
+/* Label above value. Both were inline spans, so they ran together on one line
+   and wrapped mid-phrase ("TIED" / "UP 4,122,000"); the value's margin-top was
+   inert for the same reason. They are blocks now, and neither wraps. */
+.car-card-figs { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.fig { min-width: 0; }
+.fig-end { text-align: right; }
+.fig-label {
+  display: block;
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--ink-3); font-weight: 600;
+  white-space: nowrap;
+}
+.fig-value {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px; font-weight: 620; font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 
 /* ---------- 12. Timeline --------------------------------------------------- */
 
