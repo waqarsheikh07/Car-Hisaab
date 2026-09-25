@@ -181,6 +181,23 @@
     "buyer_note": "",
     "needs_confirmation": false,
     "expenses": [],
-    "notes": "At the workshop. Repair costs still to come \u2014 add them as expenses once Usama confirms."
+    "notes": "At the workshop. Repair costs still to come — add them as expenses once Usama confirms."
+  },
+  {
+    "id": "xli-2011",
+    "name": "XLI",
+    "model_year": 2011,
+    "registration": "",
+    "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZeTBCxtqQ_DcGBFWEa5znJfhFNIDPFkWKtIrh_v66PA&s=10",
+    "purchase_date": "2026-09-25",
+    "purchase_price": 2050000,
+    "status": "in_stock",
+    "sale_date": null,
+    "sale_price": null,
+    "profit_override": null,
+    "buyer_note": "",
+    "needs_confirmation": false,
+    "expenses": [],
+    "notes": ""
   }
 ]
