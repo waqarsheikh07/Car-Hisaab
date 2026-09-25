@@ -9,6 +9,12 @@
     "id": "c2",
     "date": "2026-06-11",
     "amount": 7200000,
-    "note": "Balance of the confirmed 77 lac (PKR 7,700,000) investment \u2014 split this into the real transfers and their real dates"
+    "note": "Balance of the confirmed 77 lac (PKR 7,700,000) investment — split this into the real transfers and their real dates"
+  },
+  {
+    "id": "c3",
+    "date": "2026-09-25",
+    "amount": 300000,
+    "note": ""
   }
 ]
