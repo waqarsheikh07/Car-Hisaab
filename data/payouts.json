@@ -22,5 +22,13 @@
     "method": "bank",
     "note": "",
     "car_id": "cocoa-2016"
+  },
+  {
+    "id": "p4",
+    "date": "2026-10-22",
+    "amount": 37500,
+    "method": "bank",
+    "note": "",
+    "car_id": null
   }
 ]
