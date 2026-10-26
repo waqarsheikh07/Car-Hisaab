@@ -1002,6 +1002,20 @@
     state.data = result.data;
     state.mode = result.mode;
     state.warnings = result.warnings || [];
+
+    // A token dies quietly: the app just drops to read-only and nothing you type
+    // gets saved. Say so while there is still time to replace it.
+    var daysLeft = Store.tokenDaysLeft();
+    if (daysLeft !== null && daysLeft <= 10) {
+      var on = Store.tokenExpiryDate();
+      var onText = on ? on.toISOString().slice(0, 10) : '';
+      state.warnings.push(daysLeft < 0
+        ? 'Your GitHub token expired on ' + onText + ', so nothing can be saved. ' +
+          'Generate a new one on GitHub and paste it in Settings.'
+        : 'Your GitHub token expires in ' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's') +
+          ' (' + onText + '). Replace it in Settings before then, or the app will ' +
+          'quietly stop saving.');
+    }
     state.canWrite = Store.canWrite();
     state.today = new Date().toISOString().slice(0, 10);
     recompute();

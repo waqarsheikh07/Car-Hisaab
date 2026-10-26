@@ -63,7 +63,8 @@ To make changes:
 1. Go to <https://github.com/settings/personal-access-tokens/new> (Settings → Developer
    settings → Personal access tokens → **Fine-grained tokens** → Generate new token).
 2. **Token name:** anything, e.g. `car-hisaab`.
-3. **Expiration:** your choice. You will need to generate a new one when it expires.
+3. **Expiration:** pick a long one — a year, or no expiration. The 30-day default
+   lapses quickly, and a lapsed token means the app silently stops saving.
 4. **Repository access:** *Only select repositories* → pick **this repository only**.
 5. **Permissions → Repository permissions → Contents:** set to **Read and write**.
    Nothing else is needed.
@@ -75,6 +76,11 @@ The token is kept in that browser's `localStorage` and nowhere else. It is never
 into any file in this repository, never put in a URL, and never rendered into the page —
 the token box is always shown empty, and leaving it blank keeps the one already saved.
 **Settings → Disconnect token** removes it.
+
+**On expiry.** GitHub reports when the token runs out, and the app stores that.
+Settings always shows the date, and from ten days out a banner appears on every
+screen. Once it has lapsed, the error names the date instead of guessing. Replace
+the token and everything reconnects — nothing in the repo is affected either way.
 
 **The app must be served over http(s) for this to work.** Opening `index.html` straight
 from disk (a `file://` address) means the browser blocks all requests to github.com, and

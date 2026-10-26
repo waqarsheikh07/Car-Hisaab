@@ -19,7 +19,7 @@
   var FILES = ['cars', 'payouts', 'capital', 'settings'];
 
   var config = {
-    owner: '', repo: '', branch: 'main', dataPath: 'data', token: ''
+    owner: '', repo: '', branch: 'main', dataPath: 'data', token: '', tokenExpires: ''
   };
   var mode = 'demo';
   var shas = {};          // filename -> blob sha, refreshed on every read/write
@@ -63,12 +63,13 @@
 
   function disconnect() {
     config.token = '';
+    config.tokenExpires = '';
     lsSet(CFG_KEY, JSON.stringify(config));
   }
 
   function forget() {
     lsDel(CFG_KEY);
-    config = { owner: '', repo: '', branch: 'main', dataPath: 'data', token: '' };
+    config = { owner: '', repo: '', branch: 'main', dataPath: 'data', token: '', tokenExpires: '' };
   }
 
   function isConnected() {
@@ -139,9 +140,42 @@
     }
   }
 
+  function rememberExpiry(res) {
+    try {
+      var value = res.headers.get('github-authentication-token-expiration');
+      if (value && value !== config.tokenExpires) {
+        config.tokenExpires = value;
+        lsSet(CFG_KEY, JSON.stringify(config));
+      }
+    } catch (e) { /* header not exposed by CORS — just means no warning */ }
+  }
+
+  // Whole days until the token stops working. null when GitHub did not tell us.
+  function tokenDaysLeft() {
+    if (!config.tokenExpires) return null;
+    var text = String(config.tokenExpires).trim().replace(' UTC', 'Z').replace(' ', 'T');
+    var when = new Date(text);
+    if (isNaN(when.getTime())) return null;
+    return Math.floor((when.getTime() - new Date().getTime()) / 86400000);
+  }
+
+  function tokenExpiryDate() {
+    if (!config.tokenExpires) return null;
+    var text = String(config.tokenExpires).trim().replace(' UTC', 'Z').replace(' ', 'T');
+    var when = new Date(text);
+    return isNaN(when.getTime()) ? null : when;
+  }
+
   function httpError(res, body) {
     var msg = (body && body.message) || res.statusText || ('HTTP ' + res.status);
-    if (res.status === 401) msg = 'Token rejected (401). It may be expired, or pasted incomplete.';
+    if (res.status === 401) {
+      var left = tokenDaysLeft();
+      var on = tokenExpiryDate();
+      msg = (left !== null && left < 0 && on)
+        ? 'Your token expired on ' + on.toISOString().slice(0, 10) +
+          '. Generate a new one on GitHub and paste it in Settings.'
+        : 'Token rejected (401). It may be expired, revoked, or pasted incomplete.';
+    }
     if (res.status === 403) msg = 'Forbidden (403). The token needs Contents: Read and write on this repo.';
     if (res.status === 404) msg = 'Not found (404). Check the owner, repo name and branch.';
     var err = new Error(msg);
@@ -153,6 +187,7 @@
     var url = contentsUrl(file) + '?ref=' + encodeURIComponent(config.branch) +
       '&t=' + encodeURIComponent(String(new Date().getTime()));
     var res = await netFetch(url, { headers: apiHeaders(), cache: 'no-store' });
+    rememberExpiry(res);
     if (res.status === 404) return null;              // file not created yet
     var body = await res.json().catch(function () { return null; });
     if (!res.ok) throw httpError(res, body);
@@ -185,6 +220,7 @@
         encodeURIComponent(config.repo),
         { headers: apiHeaders(), cache: 'no-store' }
       );
+      rememberExpiry(res);
       var body = await res.json().catch(function () { return null; });
       if (!res.ok) throw httpError(res, body);
       var branchRes = await netFetch(
@@ -428,6 +464,8 @@
     get mode() { return mode; },
     get data() { return snapshot(); },
     pathFor: pathFor,
+    tokenDaysLeft: tokenDaysLeft,
+    tokenExpiryDate: tokenExpiryDate,
     networkHint: networkHint,
     canReachGitHub: function () {
       if (location.protocol === 'file:') return false;

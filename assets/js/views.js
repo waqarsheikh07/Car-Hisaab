@@ -563,9 +563,18 @@
     var st = state.data.settings;
     var mode = state.mode;
 
+    var daysLeft = root.Store.tokenDaysLeft();
+    var expiresOn = root.Store.tokenExpiryDate();
+    var expiryNote = daysLeft === null
+      ? ''
+      : (daysLeft < 0
+          ? ' <b>This token expired on ' + h(expiresOn.toISOString().slice(0, 10)) + '.</b>'
+          : ' Token expires in ' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's') +
+            ' (' + h(expiresOn.toISOString().slice(0, 10)) + ').');
+
     var modeCopy = {
       live: ['Connected', 'Reading and writing ' + h(cfg.owner) + '/' + h(cfg.repo) +
-             ' on branch ' + h(cfg.branch) + '.'],
+             ' on branch ' + h(cfg.branch) + '.' + expiryNote],
       readonly: ['Read-only', 'Showing the JSON files from this site. Add a token to make changes.'],
       demo: ['Preview mode', 'Running on bundled sample data. Changes are kept in this browser only ' +
              'and are never sent anywhere.']
