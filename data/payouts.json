@@ -4,7 +4,7 @@
     "date": "2026-07-14",
     "amount": 70000,
     "method": "bank",
-    "note": "First profit share — exactly half of Swift's 140,000 profit",
+    "note": "First profit share \u2014 exactly half of Swift's 140,000 profit",
     "car_id": "swift-2018"
   },
   {
@@ -30,5 +30,21 @@
     "method": "bank",
     "note": "",
     "car_id": null
+  },
+  {
+    "id": "p5",
+    "date": "2026-10-26",
+    "amount": 30000,
+    "method": "bank",
+    "note": "Profit share on the black Grande (Usama's figure)",
+    "car_id": "grande-2019-2"
+  },
+  {
+    "id": "p6",
+    "date": "2026-10-26",
+    "amount": 45500,
+    "method": "bank",
+    "note": "Profit share on the Prius (Usama's figure)",
+    "car_id": "prius-2007"
   }
 ]

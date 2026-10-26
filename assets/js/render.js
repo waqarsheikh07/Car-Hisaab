@@ -149,14 +149,21 @@
     var gapPct = s.myProfitEarned > 0 ? (1 - s.paidRatio) : 0;
     var alarm = gapPct > 0.25 && s.outstandingToMe > 0;
 
+    // A negative balance means the partner has paid ahead, which is the opposite
+    // of being owed — saying "outstanding" there reads as a debt that isn't one.
+    var ahead = s.outstandingToMe < 0;
+    var headline = ahead ? Math.abs(s.outstandingToMe) : s.outstandingToMe;
+
     var hero = '' +
       '<div class="stat stat-hero' + (alarm ? ' is-alarm' : '') + '">' +
-        '<div class="stat-label">' + icon('alert-circle') + 'Outstanding to ' + h(investor) + '</div>' +
-        '<div class="stat-value" data-count-to="' + s.outstandingToMe + '" data-count-prefix="PKR ">' +
-          C.formatPKR(s.outstandingToMe) + '</div>' +
-        '<div class="stat-sub">' + h(C.shorthand(s.outstandingToMe) || '') +
-          (C.shorthand(s.outstandingToMe) ? ' · ' : '') +
-          'Profit you have earned but not received' + '</div>' +
+        '<div class="stat-label">' + icon(ahead ? 'check-circle' : 'alert-circle') +
+          (ahead ? 'Paid ahead to ' : 'Outstanding to ') + h(investor) + '</div>' +
+        '<div class="stat-value" data-count-to="' + headline + '" data-count-prefix="PKR ">' +
+          C.formatPKR(headline) + '</div>' +
+        '<div class="stat-sub">' + h(C.shorthand(headline) || '') +
+          (C.shorthand(headline) ? ' · ' : '') +
+          (ahead ? 'Received more than your share so far — comes off the next payment'
+                 : 'Profit you have earned but not received') + '</div>' +
         '<div class="progress">' +
           '<div class="progress-track">' +
             '<div class="progress-fill" data-progress="' + (s.paidRatio * 100).toFixed(2) + '"></div>' +

@@ -321,8 +321,10 @@
     var s = state.summary;
     if (!s) return '';
     if (state.route.view === 'dashboard') {
-      return C.formatPKR(s.outstandingToMe) + ' still owed to you · ' +
-        s.carsInStockCount + ' cars in stock';
+      var held = s.carsInStockCount + ' car' + (s.carsInStockCount === 1 ? '' : 's') + ' in stock';
+      return s.outstandingToMe < 0
+        ? C.formatPKR(Math.abs(s.outstandingToMe)) + ' paid ahead to you · ' + held
+        : C.formatPKR(s.outstandingToMe) + ' still owed to you · ' + held;
     }
     if (state.route.view === 'cars') {
       var shown = R.filterCars(state).length;

@@ -327,8 +327,13 @@
 
     var soldWithProfit = sold.filter(function (s) { return s.profit !== null; });
     var soldWithDays = sold.filter(function (s) { return s.daysHeld !== null; });
-    var totalSaleValue = sum(sold, function (s) { return s.salePrice; });
-    var totalSoldCost = sum(sold, function (s) { return s.totalCost; });
+    // A car whose profit came from a reported figure has a cost but no sale price.
+    // Counting its cost while its sale is unknown made cost exceed sale value and
+    // the table look broken, so these columns take only complete pairs. The profit
+    // column still includes every car; the difference is the reported ones.
+    var complete = sold.filter(function (s) { return s.salePrice !== null && s.totalCost !== null; });
+    var totalSaleValue = sum(complete, function (s) { return s.salePrice; });
+    var totalSoldCost = sum(complete, function (s) { return s.totalCost; });
 
     return {
       settings: settings,
@@ -476,8 +481,10 @@
         carsBoughtNames: bought.map(function (c) { return c.name; }),
         carsSold: sold.length,
         carsSoldNames: sold.map(function (c) { return c.name; }),
-        saleValue: sum(soldSummaries, function (s) { return s.salePrice; }),
-        cost: sum(soldSummaries, function (s) { return s.totalCost; }),
+        saleValue: sum(soldSummaries.filter(function (s) {
+          return s.salePrice !== null && s.totalCost !== null; }), function (s) { return s.salePrice; }),
+        cost: sum(soldSummaries.filter(function (s) {
+          return s.salePrice !== null && s.totalCost !== null; }), function (s) { return s.totalCost; }),
         spendOnRepairs: expenses,
         capitalIn: capitalIn,
         profit: monthProfit,
