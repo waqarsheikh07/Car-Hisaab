@@ -220,6 +220,23 @@ window.SEED_DATA = {
       "needs_confirmation": true,
       "expenses": [],
       "notes": "Bought with the money from the black Grande; sold to buy the WagonR. Purchase price 2,475,000 is Usama's figure. Profit 108,000 is set so the books reconcile with what you were actually paid: it absorbs the Liana's 17,000 loss, which was settled inside this deal rather than billed separately. Net of that the Prius cleared 91,000, which is the 45,500 you received. Replace it with the real sale price when Usama gives it. Date is an estimate."
+    },
+    {
+      "id": "xli-2014",
+      "name": "XLI",
+      "model_year": 2014,
+      "registration": "",
+      "image_url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQvypB1AR0Dd1BCMQOcZma5o9WwndvS9lWVPjrn3RJ0Y_XNI8tnwH62FM0&s=10",
+      "purchase_date": "2026-10-31",
+      "purchase_price": 2230000,
+      "status": "in_stock",
+      "sale_date": null,
+      "sale_price": null,
+      "profit_override": null,
+      "buyer_note": "",
+      "needs_confirmation": false,
+      "expenses": [],
+      "notes": ""
     }
   ],
   "payouts": [

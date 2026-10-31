@@ -504,6 +504,7 @@
 
   function capital(state) {
     var s = state.summary;
+    var missingPrice = s.unsold.filter(function (c) { return c.purchasePrice === null; });
     var list = state.data.capital.slice().sort(function (a, b) {
       return String(b.date).localeCompare(String(a.date));
     });
@@ -519,7 +520,14 @@
         icon: 'package', label: 'Tied up in unsold cars',
         value: C.formatPKR(s.capitalDeployed), countTo: s.capitalDeployed, prefix: 'PKR ',
         sub: s.carsInStockCount + ' car' + (s.carsInStockCount === 1 ? '' : 's') + ' holding it',
-        foot: s.dataGaps.length ? icon('alert-triangle') + 'Understated — some purchase prices are missing' : ''
+        // Only warn when a car counted in THIS figure is actually missing its
+        // purchase price. It used to fire on any gap at all, so a sold car with
+        // no sale price made the app claim purchase prices were missing when
+        // none were — and it never said which car, so there was nothing to act on.
+        foot: missingPrice.length
+          ? icon('alert-triangle') + 'Understated — no purchase price for ' +
+            h(missingPrice.map(function (c) { return c.name; }).join(', '))
+          : ''
       }) +
       R.statCard({
         icon: 'piggy-bank', label: 'Not working',
